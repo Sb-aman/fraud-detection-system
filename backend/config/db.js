@@ -16,6 +16,8 @@
 // });
 
 // module.exports = connection;
+require("dotenv").config();
+
 const mysql = require("mysql2/promise");
 
 const pool = mysql.createPool({
@@ -28,5 +30,10 @@ const pool = mysql.createPool({
     connectionLimit: 10,
     queueLimit: 0
 });
+
+console.log("DB HOST:", process.env.DB_HOST);
+console.log("DB USER:", process.env.DB_USER);
+console.log("DB NAME:", process.env.DB_NAME);
+console.log("DB PASSWORD EXISTS:", !!process.env.DB_PASSWORD);
 
 module.exports = pool;

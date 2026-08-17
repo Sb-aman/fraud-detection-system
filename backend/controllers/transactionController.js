@@ -1,4 +1,5 @@
 const db = require("../config/db");
+const detectFraud = require("../utils/fraudDetector");
 
 // ================= SEND MONEY =================
 const sendMoney = async (req, res) => {
@@ -15,7 +16,7 @@ const sendMoney = async (req, res) => {
 
     // ================= VALIDATION =================
 
-    if (!receiverAccount || !amount) {
+   if (!receiverAccount || amount === undefined || amount === null) {
       await connection.rollback();
       connection.release();
 
@@ -24,6 +25,17 @@ const sendMoney = async (req, res) => {
         message: "Receiver Account and Amount are required",
       });
     }
+    const numericAmount = Number(amount);
+
+if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+    await connection.rollback();
+    connection.release();
+
+    return res.status(400).json({
+        success: false,
+        message: "Amount must be a valid positive number"
+    });
+} 
 
     // ================= SENDER FETCH =================
 
@@ -91,32 +103,39 @@ const transactionCount = recentTransactions[0].total;
 
     // ================= BALANCE CHECK =================
 
-    if (Number(sender.balance) < Number(amount)) {
-      await connection.rollback();
-      connection.release();
+    if (sender.balance < numericAmount) {
+    await connection.rollback();
+    connection.release();
 
-      return res.status(400).json({
+    return res.status(400).json({
         success: false,
-        message: "Insufficient Balance",
-      });
-    }
+        message: "Insufficient Balance"
+    });
+}
     // ================= DECIDE STATUS =================
 
-  let status = "SUCCESS";
-let fraudReason = null;
-let riskLevel = "LOW";
+//   let status = "SUCCESS";
+// let fraudReason = null;
+// let riskLevel = "LOW";
 
-if (Number(amount) > 50000) {
-    status = "FRAUD";
-    fraudReason = "HIGH_AMOUNT";
-    riskLevel = "HIGH";
-}
+// if (Number(amount) > 50000) {
+//     status = "FRAUD";
+//     fraudReason = "HIGH_AMOUNT";
+//     riskLevel = "HIGH";
+// }
+                                          //--> ye kam ab fraudetector.js kar rha h
+// if (transactionCount >= 5) {
+//     status = "FRAUD";
+//     fraudReason = "RAPID_TRANSACTION";
+//     riskLevel = "HIGH";
+// }
 
-if (transactionCount >= 5) {
-    status = "FRAUD";
-    fraudReason = "RAPID_TRANSACTION";
-    riskLevel = "HIGH";
-}
+const fraudResult = detectFraud({
+  amount,
+  transactionCount,
+});
+
+const { status, fraudReason, riskLevel } = fraudResult;
 
 if (status === "FRAUD") {
 
@@ -143,14 +162,14 @@ if (status === "FRAUD") {
 
     await connection.query(
       "UPDATE users SET balance = balance - ? WHERE id = ?",
-      [amount, sender.id],
+      [numericAmount, sender.id],
     );
 
     // ================= ADD MONEY =================
 
     await connection.query(
       "UPDATE users SET balance = balance + ? WHERE id = ?",
-      [amount, receiver.id],
+      [numericAmount, receiver.id],
     );
 
     // ================= SAVE TRANSACTION =================
@@ -254,13 +273,34 @@ const transactionHistory = async (req, res) => {
 
     const user = userResult[0];
 
-    const [transactions] = await db.query(
-      `SELECT *
-             FROM transactions
-             WHERE sender_id = ? OR receiver_id = ?
-             ORDER BY created_at DESC`,
-      [user.id, user.id],
-    );
+  const [transactions] = await db.query(
+  `SELECT
+      t.id,
+      t.amount,
+      t.status,
+      t.fraud_reason,
+      t.riskLevel,
+      t.created_at,
+
+      sender.name AS sender_name,
+      sender.account_number AS sender_account,
+
+      receiver.name AS receiver_name,
+      receiver.account_number AS receiver_account
+
+   FROM transactions t
+
+   JOIN users sender
+     ON t.sender_id = sender.id
+
+   JOIN users receiver
+     ON t.receiver_id = receiver.id
+
+   WHERE t.sender_id = ? OR t.receiver_id = ?
+
+   ORDER BY t.created_at DESC`,
+  [user.id, user.id],
+);
 
     return res.status(200).json({
       success: true,
