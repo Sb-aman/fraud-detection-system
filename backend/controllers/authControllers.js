@@ -28,6 +28,21 @@ const register = async (req, res) => {
             });
         }
 
+        // validate email and password
+        if (!email.includes("@")) {
+    return res.status(400).json({
+        success: false,
+        message: "Invalid email format"
+    });
+}
+
+if (password.length < 6) {
+    return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters"
+    });
+}
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -69,6 +84,13 @@ const login = async (req, res) => {
             });
         }
 
+        if (!email.includes("@")) {
+    return res.status(400).json({
+        success: false,
+        message: "Invalid email format"
+    });
+}
+
         // Find user
         const [result] = await db.query(
             "SELECT * FROM users WHERE email = ?",
@@ -84,11 +106,6 @@ const login = async (req, res) => {
 
         const user = result[0];
 
-console.log(user);
-console.log(user.password);
-console.log(typeof user.password);
-console.log(Array.isArray(user.password));
-console.log(Buffer.isBuffer(user.password));
 
 
         // Compare password
@@ -141,7 +158,52 @@ console.log(Buffer.isBuffer(user.password));
 
 };
 
+// ================= PROFILE =================
+
+const getProfile = async (req, res) => {
+    try {
+        const userEmail = req.user.email;
+
+        const [result] = await db.query(
+            `SELECT id, name, email, account_number, balance, created_at
+             FROM users
+             WHERE email = ?`,
+            [userEmail]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User Not Found"
+            });
+        }
+
+        const user = result[0];
+
+        return res.status(200).json({
+            success: true,
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                accountNumber: user.account_number,
+                balance: user.balance,
+                createdAt: user.created_at
+            }
+        });
+
+    } catch (error) {
+        console.log(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+    }
+};
+
 module.exports = {
     register,
-    login
-};
+    login,
+    getProfile
+};28

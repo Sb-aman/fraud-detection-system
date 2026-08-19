@@ -2,6 +2,47 @@ const db = require("../config/db");
 const detectFraud = require("../utils/fraudDetector");
 
 // ================= SEND MONEY =================
+const getBalance = async (req, res) => {
+    let connection;
+
+    try {
+        connection = await db.getConnection();
+
+        const userEmail = req.user.email;
+
+        const [result] = await connection.query(
+            "SELECT id, name, email, account_number, balance FROM users WHERE email = ?",
+            [userEmail]
+        );
+
+        if (result.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Balance fetched successfully",
+            balance: result[0].balance,
+            accountNumber: result[0].account_number
+        });
+
+    } catch (error) {
+        console.error("Get Balance Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal Server Error"
+        });
+
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+};
 const sendMoney = async (req, res) => {
   let connection;
 
@@ -319,5 +360,5 @@ const transactionHistory = async (req, res) => {
 
 module.exports = {
   sendMoney,
-  transactionHistory,
+  transactionHistory,getBalance
 };

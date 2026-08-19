@@ -31,9 +31,9 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-console.log("DB HOST:", process.env.DB_HOST);
-console.log("DB USER:", process.env.DB_USER);
-console.log("DB NAME:", process.env.DB_NAME);
-console.log("DB PASSWORD EXISTS:", !!process.env.DB_PASSWORD);
+// console.log("DB HOST:", process.env.DB_HOST);
+// console.log("DB USER:", process.env.DB_USER);
+// console.log("DB NAME:", process.env.DB_NAME);
+// console.log("DB PASSWORD EXISTS:", !!process.env.DB_PASSWORD);
 
 module.exports = pool;
