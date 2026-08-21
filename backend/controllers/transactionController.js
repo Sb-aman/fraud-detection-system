@@ -80,10 +80,10 @@ if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
 
     // ================= SENDER FETCH =================
 
-    const [senderResult] = await connection.query(
-      "SELECT * FROM users WHERE email = ?",
-      [senderEmail],
-    );
+  const [senderResult] = await connection.query(
+  "SELECT * FROM users WHERE email = ? FOR UPDATE",
+  [senderEmail],
+);
 
     if (senderResult.length === 0) {
       await connection.rollback();
@@ -109,10 +109,10 @@ const transactionCount = recentTransactions[0].total;
 
     // ================= RECEIVER FETCH =================
 
-    const [receiverResult] = await connection.query(
-      "SELECT * FROM users WHERE account_number = ?",
-      [receiverAccount],
-    );
+  const [receiverResult] = await connection.query(
+  "SELECT * FROM users WHERE account_number = ? FOR UPDATE",
+  [receiverAccount],
+);
 
     if (receiverResult.length === 0) {
       await connection.rollback();
@@ -172,7 +172,7 @@ const transactionCount = recentTransactions[0].total;
 // }
 
 const fraudResult = detectFraud({
-  amount,
+  numericAmount,
   transactionCount,
 });
 
@@ -182,9 +182,9 @@ if (status === "FRAUD") {
 
     await connection.query(
         `INSERT INTO transactions
-        (sender_id, receiver_id, amount, status, fraud_reason ,riskLevel)
+        (sender_id, receiver_id, numericAmount, status, fraud_reason ,riskLevel)
         VALUES (?, ?, ?, ?, ? ,?)`,
-        [sender.id, receiver.id, amount, status, fraudReason ,riskLevel]
+        [sender.id, receiver.id, numericAmount, status, fraudReason ,riskLevel]
     );
 
     await connection.commit();
