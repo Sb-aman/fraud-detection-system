@@ -32,17 +32,23 @@ const Dashboard = () => {
   const [analytics, setAnalytics] = useState(null);
   const [recentAlerts, setRecentAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [balance, setBalance] = useState(null);
+  const [history, setHistory] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, txnRes, activityRes, analyticsRes, alertsRes] = await Promise.all([
+        const [balanceRes,historyRes, statsRes, txnRes, activityRes, analyticsRes, alertsRes] = await Promise.all([
+          transactionsAPI.getBalance(),
+          transactionsAPI.getHistory(),
           dashboardAPI.getStats(),
           transactionsAPI.getAll({ limit: 10 }),
           dashboardAPI.getActivityFeed(),
           analyticsAPI.getAll(),
           alertsAPI.getAll(),
         ]);
+        setBalance(balanceRes.data);
+        setHistory(historyRes.data.transactions);
         setStats(statsRes.data);
         setTransactions(txnRes.data);
         setActivity(activityRes.data);

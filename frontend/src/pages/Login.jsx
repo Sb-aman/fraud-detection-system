@@ -126,9 +126,9 @@ const Login = () => {
             </Button>
           </form>
 
-          <p className="text-xs text-text-muted text-center mt-6">
-            Demo: Use any email and password (min 4 chars)
-          </p>
+         <p className="text-xs text-text-muted text-center mt-6">
+  Your credentials are securely verified.
+</p>
         </motion.div>
       </motion.div>
     </div>

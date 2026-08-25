@@ -22,24 +22,68 @@ const Transactions = () => {
 
   const debouncedSearch = useDebounce(filters.search, 300);
 
-  useEffect(() => {
-    const fetchTransactions = async () => {
-      setLoading(true);
-      try {
-        const { data } = await transactionsAPI.getAll({
-          ...filters,
-          search: debouncedSearch,
-          limit: 100,
-        });
-        setTransactions(data);
-      } catch {
-        toast.error('Failed to load transactions');
-      } finally {
-        setLoading(false);
+ useEffect(() => {
+  const fetchTransactions = async () => {
+    setLoading(true);
+
+    try {
+      const { data } = await transactionsAPI.getHistory();
+
+      let result = data.transactions || [];
+
+      // Search
+      if (debouncedSearch) {
+        const q = debouncedSearch.toLowerCase();
+
+        result = result.filter(
+          (t) =>
+            String(t.id).includes(q) ||
+            t.sender_name?.toLowerCase().includes(q) ||
+            t.receiver_name?.toLowerCase().includes(q) ||
+            t.sender_account?.toLowerCase().includes(q) ||
+            t.receiver_account?.toLowerCase().includes(q)
+        );
       }
-    };
-    fetchTransactions();
-  }, [debouncedSearch, filters.status, filters.country, filters.riskMin, filters.riskMax]);
+
+      // Status
+      if (filters.status !== 'all') {
+        result = result.filter(
+          (t) => t.status?.toLowerCase() === filters.status.toLowerCase()
+        );
+      }
+
+      // Risk
+      if (filters.riskMin) {
+        result = result.filter(
+          (t) => Number(t.riskLevel || 0) >= Number(filters.riskMin)
+        );
+      }
+
+      if (filters.riskMax) {
+        result = result.filter(
+          (t) => Number(t.riskLevel || 0) <= Number(filters.riskMax)
+        );
+      }
+
+      setTransactions(result);
+
+    } catch (error) {
+      console.error(error);
+      toast.error(
+        error.response?.data?.message || 'Failed to load transactions'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchTransactions();
+}, [
+  debouncedSearch,
+  filters.status,
+  filters.riskMin,
+  filters.riskMax,
+]);
 
   const handleExport = () => {
     const headers = ['ID', 'Customer', 'Amount', 'Risk Score', 'Status', 'Location', 'Time'];
