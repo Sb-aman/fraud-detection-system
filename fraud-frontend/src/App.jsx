@@ -6,7 +6,7 @@ import {
 } from "react-router-dom";
 
 // import Login from "./pages/Login";
-import Login from "./pages/login";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import SendMoney from "./pages/SendMoney";
 import Transactions from "./pages/Transactions";

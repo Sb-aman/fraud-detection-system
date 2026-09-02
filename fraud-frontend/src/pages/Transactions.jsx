@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { transactionAPI } from "../services/api";
+import { transactionsAPI } from "../services/api";
 
 function Transactions() {
 
@@ -13,7 +13,7 @@ function Transactions() {
       try {
 
         const response =
-          await transactionAPI.getHistory();
+          await transactionsAPI.getHistory();
 
         setTransactions(
           response.data.transactions || []

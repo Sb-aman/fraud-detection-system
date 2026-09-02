@@ -26,7 +26,7 @@ export const authAPI = {
   profile: () => api.get("/auth/profile"),
 };
 
-export const transactionAPI = {
+export const transactionsAPI = {
   getBalance: () => api.get("/transactions/balance"),
 
   sendMoney: (data) =>

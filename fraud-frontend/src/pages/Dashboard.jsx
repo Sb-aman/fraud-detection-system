@@ -1,26 +1,21 @@
 import { useEffect, useState } from "react";
-import { transactionAPI } from "../services/api";
+import { transactionsAPI } from "../services/api";
 
 function Dashboard() {
-
   const [balance, setBalance] = useState(null);
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const user = JSON.parse(
-    localStorage.getItem("user")
-  );
+  const user = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
-
     const loadData = async () => {
-
       try {
-
         const balanceResponse =
-          await transactionAPI.getBalance();
+          await transactionsAPI.getBalance();
 
         const historyResponse =
-          await transactionAPI.getHistory();
+          await transactionsAPI.getHistory();
 
         setBalance(balanceResponse.data.balance);
 
@@ -29,16 +24,18 @@ function Dashboard() {
         );
 
       } catch (error) {
-
-        console.log(error);
-
+        console.log("Dashboard error:", error);
+      } finally {
+        setLoading(false);
       }
-
     };
 
     loadData();
-
   }, []);
+
+  if (loading) {
+    return <h2>Loading dashboard...</h2>;
+  }
 
   return (
     <div>
@@ -47,49 +44,48 @@ function Dashboard() {
         Welcome, {user?.name}
       </h1>
 
-      <h2>
-        Account Number
-      </h2>
+      <h2>Account Number</h2>
 
-      <p>
-        {user?.accountNumber}
-      </p>
+      {/* <p>
+        {user?.account_number}
+      </p> */}
+      <p>{user?.accountNumber || user?.account_number || "Not available"}</p>
 
-      <h2>
-        Balance
-      </h2>
+      <h2>Balance</h2>
 
       <h3>
         ₹ {balance}
       </h3>
 
-      <h2>
-        Recent Transactions
-      </h2>
+      <h2>Recent Transactions</h2>
 
-      {transactions.slice(0, 5).map((txn) => (
+      {transactions.length === 0 ? (
+        <p>No transactions found.</p>
+      ) : (
+        transactions.slice(0, 5).map((txn) => (
+          <div key={txn.id}>
 
-        <div key={txn.id}>
+            <p>
+              Transaction #{txn.id}
+            </p>
 
-          <p>
-            Transaction #{txn.id}
-          </p>
+            <p>
+              ₹ {txn.amount}
+            </p>
 
-          <p>
-            ₹ {txn.amount}
-          </p>
+            <p>
+              Status: {txn.status}
+            </p>
 
-          <p>
-            {txn.status}
-          </p>
+            <p>
+              {txn.created_at}
+            </p>
 
-          <p>
-            {txn.created_at}
-          </p>
+            <hr />
 
-        </div>
-
-      ))}
+          </div>
+        ))
+      )}
 
     </div>
   );
