@@ -1,52 +1,57 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 import { transactionsAPI } from "../services/api";
 
 function SendMoney() {
 
-  const [receiverAccount, setReceiverAccount] = useState("");
-  const [amount, setAmount] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [receiverAccount, setReceiverAccount] =
+    useState("");
+
+  const [amount, setAmount] =
+    useState("");
+
+  const [loading, setLoading] =
+    useState(false);
 
   const handleSubmit = async (e) => {
 
     e.preventDefault();
 
-    // ================= VALIDATION =================
-
     if (!receiverAccount || !amount) {
-      alert("Receiver account and amount are required");
+      alert(
+        "Receiver account and amount are required"
+      );
       return;
     }
 
     if (Number(amount) <= 0) {
-      alert("Amount must be greater than 0");
+      alert(
+        "Amount must be greater than 0"
+      );
       return;
     }
-
-    // ================= GET LOGGED IN USER =================
 
     const user = JSON.parse(
       localStorage.getItem("user")
     );
 
-    // ================= SELF TRANSFER CHECK =================
-
     const isSelfTransfer =
       receiverAccount === user?.accountNumber;
 
+    // ================= SELF TRANSFER POPUP =================
+
     if (isSelfTransfer) {
 
-      const confirmTransfer = window.confirm(
-        "You are transferring money to your own account.\n\nDo you want to continue?"
-      );
+      const confirmTransfer =
+        window.confirm(
+          "You are transferring money to your own account.\n\nDo you want to continue?"
+        );
 
-      // User clicked Cancel
       if (!confirmTransfer) {
         return;
       }
     }
-
-    // ================= SEND MONEY =================
 
     try {
 
@@ -59,9 +64,9 @@ function SendMoney() {
 
           amount: Number(amount),
 
-          // Backend ko batayenge ki user ne
-          // self-transfer confirm kiya hai
-          confirmSelfTransfer: isSelfTransfer
+          confirmSelfTransfer:
+            isSelfTransfer,
+
         });
 
       const data = response.data;
@@ -104,70 +109,83 @@ function SendMoney() {
     } finally {
 
       setLoading(false);
+
     }
   };
 
   return (
-    <div>
+    <>
 
-      <h1>Send Money</h1>
+      <Navbar />
 
-      <form onSubmit={handleSubmit}>
+      <main className="container small-container">
 
-        <div>
+        <div className="page-header">
 
-          <label>
-            Receiver Account
-          </label>
+          <div>
+            <h1>Send Money</h1>
 
-          <br />
+            <p className="muted">
+              Securely transfer money to another account
+            </p>
+          </div>
 
-          <input
-            type="text"
-            placeholder="Enter receiver account"
-            value={receiverAccount}
-            onChange={(e) =>
-              setReceiverAccount(e.target.value)
-            }
-          />
+          <Link to="/dashboard">
+            ← Dashboard
+          </Link>
 
         </div>
 
-        <br />
+        <div className="form-card">
 
-        <div>
+          <form onSubmit={handleSubmit}>
 
-          <label>
-            Amount
-          </label>
+            <label>
+              Receiver Account
+            </label>
 
-          <br />
+            <input
+              type="text"
+              placeholder="Example: ACC123456"
+              value={receiverAccount}
+              onChange={(e) =>
+                setReceiverAccount(
+                  e.target.value
+                )
+              }
+            />
 
-          <input
-            type="number"
-            placeholder="Enter amount"
-            value={amount}
-            onChange={(e) =>
-              setAmount(e.target.value)
-            }
-          />
+            <label>
+              Amount
+            </label>
+
+            <input
+              type="number"
+              min="1"
+              placeholder="Enter amount"
+              value={amount}
+              onChange={(e) =>
+                setAmount(e.target.value)
+              }
+            />
+
+            <button
+              type="submit"
+              className="primary-btn full-btn"
+              disabled={loading}
+            >
+              {loading
+                ? "Processing..."
+                : "Send Money"}
+            </button>
+
+          </form>
 
         </div>
 
-        <br />
+      </main>
 
-        <button
-          type="submit"
-          disabled={loading}
-        >
-          {loading
-            ? "Processing..."
-            : "Send Money"}
-        </button>
-
-      </form>
-
-    </div>
+    </>
   );
 }
 

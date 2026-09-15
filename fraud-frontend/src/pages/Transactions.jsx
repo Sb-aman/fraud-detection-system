@@ -1,10 +1,17 @@
 import { useEffect, useState } from "react";
+import Navbar from "../components/Navbar";
 import { transactionsAPI } from "../services/api";
 
 function Transactions() {
 
   const [transactions, setTransactions] =
     useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
 
   useEffect(() => {
 
@@ -21,10 +28,18 @@ function Transactions() {
 
       } catch (error) {
 
-        console.log(error);
+        console.error(error);
+
+        setError(
+          error.response?.data?.message ||
+          "Unable to load transactions"
+        );
+
+      } finally {
+
+        setLoading(false);
 
       }
-
     };
 
     loadTransactions();
@@ -32,72 +47,139 @@ function Transactions() {
   }, []);
 
   return (
-    <div>
+    <>
 
-      <h1>Transaction History</h1>
+      <Navbar />
 
-      <table>
+      <main className="container">
 
-        <thead>
+        <div className="page-header">
 
-          <tr>
-            <th>ID</th>
-            <th>Sender</th>
-            <th>Receiver</th>
-            <th>Amount</th>
-            <th>Status</th>
-            <th>Risk</th>
-            <th>Reason</th>
-            <th>Date</th>
-          </tr>
+          <div>
+            <h1>Transaction History</h1>
 
-        </thead>
+            <p className="muted">
+              All your account transactions
+            </p>
+          </div>
 
-        <tbody>
+          <span className="transaction-count">
+            {transactions.length} Transactions
+          </span>
 
-          {transactions.map((txn) => (
+        </div>
 
-            <tr key={txn.id}>
+        {loading && (
+          <div className="empty-card">
+            Loading transactions...
+          </div>
+        )}
 
-              <td>{txn.id}</td>
+        {error && (
+          <div className="error-card">
+            {error}
+          </div>
+        )}
 
-              <td>
-                {txn.sender_name}
-              </td>
+        {!loading &&
+          !error &&
+          transactions.length === 0 && (
 
-              <td>
-                {txn.receiver_name}
-              </td>
+            <div className="empty-card">
+              No transactions found.
+            </div>
 
-              <td>
-                ₹ {txn.amount}
-              </td>
+          )}
 
-              <td>
-                {txn.status}
-              </td>
+        {!loading &&
+          !error &&
+          transactions.length > 0 && (
 
-              <td>
-                {txn.riskLevel || "LOW"}
-              </td>
+            <div className="table-wrapper">
 
-              <td>
-                {txn.fraud_reason || "-"}
-              </td>
+              <table>
 
-              <td>
-                {txn.created_at}
-              </td>
+                <thead>
 
-            </tr>
+                  <tr>
+                    <th>ID</th>
+                    <th>Receiver</th>
+                    <th>Account</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Risk</th>
+                    <th>Reason</th>
+                    <th>Date</th>
+                  </tr>
 
-          ))}
+                </thead>
 
-        </tbody>
+                <tbody>
 
-      </table>
+                  {transactions.map((txn) => (
 
-    </div>
+                    <tr key={txn.id}>
+
+                      <td>#{txn.id}</td>
+
+                      <td>
+                        {txn.receiver_name}
+                      </td>
+
+                      <td>
+                        {txn.receiver_account}
+                      </td>
+
+                      <td>
+                        ₹{" "}
+                        {Number(
+                          txn.amount
+                        ).toLocaleString("en-IN")}
+                      </td>
+
+                      <td>
+
+                        <span
+                          className={
+                            txn.status === "FRAUD"
+                              ? "status fraud"
+                              : "status success"
+                          }
+                        >
+                          {txn.status}
+                        </span>
+
+                      </td>
+
+                      <td>
+                        {txn.riskLevel || "LOW"}
+                      </td>
+
+                      <td>
+                        {txn.fraud_reason || "-"}
+                      </td>
+
+                      <td>
+                        {new Date(
+                          txn.created_at
+                        ).toLocaleString()}
+                      </td>
+
+                    </tr>
+
+                  ))}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          )}
+
+      </main>
+
+    </>
   );
 }
 

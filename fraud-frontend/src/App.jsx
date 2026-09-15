@@ -5,8 +5,8 @@ import {
   Navigate,
 } from "react-router-dom";
 
-// import Login from "./pages/Login";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import SendMoney from "./pages/SendMoney";
 import Transactions from "./pages/Transactions";
@@ -14,23 +14,39 @@ import Transactions from "./pages/Transactions";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
+
   return (
+
     <BrowserRouter>
+
       <Routes>
 
-        {/* Default */}
+        {/* DEFAULT */}
+
         <Route
           path="/"
-          element={<Navigate to="/login" replace />}
+          element={
+            <Navigate
+              to="/login"
+              replace
+            />
+          }
         />
 
-        {/* Public Route */}
+        {/* PUBLIC */}
+
         <Route
           path="/login"
           element={<Login />}
         />
 
-        {/* Protected Routes */}
+        <Route
+          path="/register"
+          element={<Register />}
+        />
+
+        {/* PROTECTED */}
+
         <Route
           path="/dashboard"
           element={
@@ -58,13 +74,20 @@ function App() {
           }
         />
 
-        {/* Unknown URL */}
+        {/* UNKNOWN */}
+
         <Route
           path="*"
-          element={<Navigate to="/dashboard" replace />}
+          element={
+            <Navigate
+              to="/dashboard"
+              replace
+            />
+          }
         />
 
       </Routes>
+
     </BrowserRouter>
   );
 }

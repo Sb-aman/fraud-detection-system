@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { authAPI } from "../services/api";
 
 function Login() {
+
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -12,8 +13,8 @@ function Login() {
   const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
 
+    e.preventDefault();
     setError("");
 
     if (!email || !password) {
@@ -22,6 +23,7 @@ function Login() {
     }
 
     try {
+
       setLoading(true);
 
       const response = await authAPI.login({
@@ -31,17 +33,15 @@ function Login() {
 
       const { token, user } = response.data;
 
-      // Save JWT
       localStorage.setItem("authToken", token);
+      localStorage.setItem(
+        "user",
+        JSON.stringify(user)
+      );
 
-      // Save user
-      localStorage.setItem("user", JSON.stringify(user));
-
-      // Dashboard
       navigate("/dashboard");
 
     } catch (error) {
-      console.error(error);
 
       setError(
         error.response?.data?.message ||
@@ -54,15 +54,13 @@ function Login() {
   };
 
   return (
-    <div style={styles.container}>
+    <div className="auth-page">
 
-      <div style={styles.card}>
+      <div className="auth-card">
 
-        <h1 style={styles.title}>
-          FraudGuard
-        </h1>
+        <h1>FraudGuard</h1>
 
-        <p style={styles.subtitle}>
+        <p className="auth-subtitle">
           Secure Fraud Detection Portal
         </p>
 
@@ -74,8 +72,9 @@ function Login() {
             type="email"
             placeholder="Enter your email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={styles.input}
+            onChange={(e) =>
+              setEmail(e.target.value)
+            }
           />
 
           <label>Password</label>
@@ -84,89 +83,40 @@ function Login() {
             type="password"
             placeholder="Enter your password"
             value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={styles.input}
+            onChange={(e) =>
+              setPassword(e.target.value)
+              
+            }
           />
 
           {error && (
-            <p style={styles.error}>
+            <p className="error-message">
               {error}
             </p>
           )}
 
           <button
-            type="submit"
+            className="primary-btn"
             disabled={loading}
-            style={styles.button}
           >
-            {loading ? "Logging in..." : "Login"}
+            {loading
+              ? "Logging in..."
+              : "Login"}
           </button>
 
         </form>
+
+        <p className="auth-footer">
+          Don't have an account?{" "}
+          <Link to="/register">
+            Create Account
+          </Link>
+        </p>
 
       </div>
 
     </div>
   );
 }
-
-const styles = {
-  container: {
-    minHeight: "100vh",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center",
-    background: "#337fcc",
-  },
-
-  card: {
-    width: "350px",
-    padding: "30px",
-    background: "white",
-    borderRadius: "12px",
-    boxShadow: "0 5px 20px rgba(0,0,0,0.1)",
-  },
-
-  title: {
-    textAlign: "center",
-    marginBottom: "50px",
-    // background: "#ec1414", 
-    color: 'black',
-    
-  },
-
-  subtitle: {
-    textAlign: "center",
-    color: "#64748b",
-    marginBottom: "25px",
-  },
-
-  input: {
-    width: "100%",
-    padding: "10px",
-    marginTop: "6px",
-    marginBottom: "15px",
-    border: "1px solid #cbd5e1",
-    borderRadius: "6px",
-    boxSizing: "border-box",
-  },
-
-  button: {
-    width: "100%",
-    padding: "11px",
-    background: "#2563eb",
-    color: "white",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontSize: "16px",
-  },
-
-  error: {
-    color: "#dc2626",
-    fontSize: "14px",
-    marginBottom: "10px",
-  },
-};
 
 export default Login;
