@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ledgerline — Secure Transfers</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2220%22 fill=%22%230B1220%22/><path d=%22M28 55 L45 70 L74 32%22 stroke=%22%23B8944F%22 stroke-width=%229%22 fill=%22none%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600;8..60,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink-950:#0B1220;
+    --ink-900:#121A2B;
+    --ink-850:#161F35;
+    --ink-800:#1E2A47;
+    --ink-700:#2B3A5C;
+    --paper:#EAE4D6;
+    --paper-dim:#B9B2A0;
+    --brass:#C4A05A;
+    --brass-bright:#DCB86B;
+    --brass-dim:#8C6F3D;
+    --safe:#5CA97C;
+    --safe-bg:rgba(92,169,124,0.12);
+    --caution:#D9A23F;
+    --caution-bg:rgba(217,162,63,0.12);
+    --fraud:#CA5B49;
+    --fraud-bg:rgba(202,91,73,0.14);
+    --font-serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+    --font-sans:"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-mono:"IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--ink-950);
+    color:var(--paper);
+    font-family:var(--font-sans);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 15% 10%, rgba(196,160,90,0.06), transparent 40%),
+      radial-gradient(circle at 85% 90%, rgba(92,169,124,0.05), transparent 45%);
+    pointer-events:none;
+    z-index:0;
+  }
+
+  h1,h2,h3,.serif{ font-family:var(--font-serif); font-weight:600; letter-spacing:-0.01em; }
+  .mono{ font-family:var(--font-mono); }
+  a{ color:inherit; }
+
+  ::selection{ background:var(--brass-dim); color:var(--ink-950); }
+
+  /* Scrollbar, minimal */
+  ::-webkit-scrollbar{ width:10px; height:10px; }
+  ::-webkit-scrollbar-track{ background:transparent; }
+  ::-webkit-scrollbar-thumb{ background:var(--ink-700); border-radius:8px; }
+
+  button{ font-family:inherit; cursor:pointer; }
+  input{ font-family:inherit; }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:12px 20px;
+    border-radius:3px;
+    border:1px solid transparent;
+    font-size:14px; font-weight:600;
+    letter-spacing:0.01em;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease;
+  }
+  .btn:active{ transform:translateY(1px); }
+  .btn-primary{
+    background:var(--brass);
+    color:var(--ink-950);
+  }
+  .btn-primary:hover{ background:var(--brass-bright); }
+  .btn-primary:disabled{ background:var(--ink-700); color:var(--paper-dim); cursor:not-allowed; }
+  .btn-ghost{
+    background:transparent;
+    border-color:var(--ink-700);
+    color:var(--paper);
+  }
+  .btn-ghost:hover{ border-color:var(--brass-dim); }
+  .btn-danger-ghost{
+    background:transparent;
+    border-color:var(--fraud);
+    color:var(--fraud);
+  }
+  .btn-danger-ghost:hover{ background:var(--fraud-bg); }
+
+  .field-label{
+    font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--paper-dim); font-weight:600; display:block; margin-bottom:7px;
+  }
+  .field-input{
+    width:100%;
+    background:var(--ink-900);
+    border:1px solid var(--ink-700);
+    color:var(--paper);
+    padding:12px 14px;
+    border-radius:3px;
+    font-size:15px;
+    outline:none;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .field-input:focus{ border-color:var(--brass); background:var(--ink-850); }
+  .field-input::placeholder{ color:#5B6685; }
+
+  .card{
+    background:var(--ink-900);
+    border:1px solid var(--ink-800);
+    border-radius:4px;
+  }
+
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px; font-weight:600;
+    font-family:var(--font-mono);
+    letter-spacing:0.02em;
+  }
+  .pill-safe{ background:var(--safe-bg); color:var(--safe); }
+  .pill-caution{ background:var(--caution-bg); color:var(--caution); }
+  .pill-fraud{ background:var(--fraud-bg); color:var(--fraud); }
+  .pill-dot{ width:6px; height:6px; border-radius:50%; background:currentColor; }
+
+  .nav-link{
+    display:flex; align-items:center; gap:12px;
+    padding:11px 14px;
+    border-radius:3px;
+    color:var(--paper-dim);
+    font-size:14px; font-weight:500;
+    transition:background .15s ease, color .15s ease;
+    border:1px solid transparent;
+  }
+  .nav-link:hover{ color:var(--paper); background:var(--ink-850); }
+  .nav-link.active{ color:var(--brass-bright); background:var(--ink-850); border-color:var(--ink-800); }
+  .nav-link svg{ flex-shrink:0; opacity:0.85; }
+
+  .seal-mark{
+    width:40px; height:40px;
+    border-radius:8px;
+    background:linear-gradient(155deg, var(--ink-800), var(--ink-950));
+    border:1px solid var(--ink-700);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  .fade-in{ animation:fadeIn .35s ease both; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+
+  .divider{ height:1px; background:var(--ink-800); border:none; margin:0; }
+
+  .skeleton{
+    background:linear-gradient(90deg, var(--ink-850) 25%, var(--ink-800) 37%, var(--ink-850) 63%);
+    background-size:400% 100%;
+    animation:shimmer 1.4s ease infinite;
+    border-radius:3px;
+  }
+  @keyframes shimmer{ 0%{background-position:100% 0;} 100%{background-position:0 0;} }
+
+  table{ width:100%; border-collapse:collapse; }
+  th{
+    text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.08em;
+    color:var(--paper-dim); font-weight:600; padding:10px 14px; border-bottom:1px solid var(--ink-800);
+    white-space:nowrap;
+  }
+  td{ padding:14px; border-bottom:1px solid var(--ink-850); font-size:14px; vertical-align:middle; }
+  tr:last-child td{ border-bottom:none; }
+  tr.tx-row:hover td{ background:rgba(255,255,255,0.015); }
+
+  .toast{
+    position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+    background:var(--ink-800); border:1px solid var(--ink-700);
+    color:var(--paper); padding:13px 20px; border-radius:4px;
+    font-size:14px; box-shadow:0 12px 32px rgba(0,0,0,0.4);
+    z-index:200; display:flex; align-items:center; gap:10px;
+    max-width:420px;
+  }
+  .toast.error{ border-color:var(--fraud); }
+  .toast.success{ border-color:var(--safe); }
+
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(6,9,17,0.72);
+    display:flex; align-items:center; justify-content:center; z-index:150;
+    padding:20px;
+    backdrop-filter:blur(2px);
+  }
+
+  .balance-figure{
+    font-family:var(--font-mono);
+    font-variant-numeric:tabular-nums;
+    letter-spacing:-0.01em;
+  }
+
+  @media (max-width: 860px){
+    .app-shell{ flex-direction:column; }
+    .sidebar{
+      position:fixed; bottom:0; left:0; right:0; top:auto;
+      width:100%; height:auto; flex-direction:row;
+      padding:8px; border-top:1px solid var(--ink-800); border-right:none;
+      z-index:100;
+      justify-content:space-around;
+    }
+    .sidebar .brand-block, .sidebar .sidebar-footer{ display:none; }
+    .sidebar nav{ display:flex; flex-direction:row; width:100%; gap:2px; }
+    .nav-link{ flex-direction:column; gap:4px; font-size:10px; padding:8px 4px; text-align:center; }
+    .nav-link span{ white-space:nowrap; }
+    .main-content{ padding-bottom:88px !important; }
+  }
+
+  .focus-ring:focus-visible{ outline:2px solid var(--brass); outline-offset:2px; }
+</style>
+</head>
+<body>
+
+<div id="root"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============================================================
+     STATE
+  ============================================================ */
+  const state = {
+    apiBase: localStorage.getItem("ll_api_base") || "http://localhost:5000/api",
+    token: localStorage.getItem("ll_token") || null,
+    user: JSON.parse(localStorage.getItem("ll_user") || "null"),
+    view: "login",          // login | register | dashboard | send | history | profile
+    loading: false,
+    toast: null,            // {type,msg}
+    history: null,          // cached transactions
+    balanceLoading: false,
+    modal: null,            // {type:'self-transfer', payload}
+  };
+
+  function persistAuth(){
+    if(state.token) localStorage.setItem("ll_token", state.token); else localStorage.removeItem("ll_token");
+    if(state.user) localStorage.setItem("ll_user", JSON.stringify(state.user)); else localStorage.removeItem("ll_user");
+  }
+
+  function showToast(type, msg, ttl=3600){
+    state.toast = {type, msg};
+    render();
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(()=>{ state.toast = null; render(); }, ttl);
+  }
+
+  function fmtMoney(n){
+    const num = Number(n) || 0;
+    return "₹" + num.toLocaleString("en-IN", {minimumFractionDigits:2, maximumFractionDigits:2});
+  }
+  function fmtDate(d){
+    try{
+      const dt = new Date(d);
+      return dt.toLocaleString("en-IN", {day:"2-digit", month:"short", year:"numeric", hour:"2-digit", minute:"2-digit"});
+    }catch(e){ return d; }
+  }
+  function escapeHtml(str){
+    return String(str ?? "").replace(/[&<>"']/g, s=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[s]));
+  }
+
+  /* ============================================================
+     API LAYER
+  ============================================================ */
+  async function api(path, {method="GET", body=null, auth=true} = {}){
+    const headers = {"Content-Type":"application/json"};
+    if(auth && state.token) headers["Authorization"] = "Bearer " + state.token;
+
+    let res, data;
+    try{
+      res = await fetch(state.apiBase.replace(/\/$/,"") + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined
+      });
+    }catch(err){
+      throw {networkError:true, message:"Can't reach the server at " + state.apiBase + ". Is the backend running?"};
+    }
+
+    try{ data = await res.json(); }
+    catch(e){ data = {}; }
+
+    if(res.status === 401){
+      // token invalid/expired
+      logout(true);
+      throw {authError:true, message: data.message || "Session expired. Please log in again."};
+    }
+
+    if(!res.ok || data.success === false && method === "GET"){
+      throw {status:res.status, message: data.message || ("Request failed (" + res.status + ")"), data};
+    }
+
+    return {ok: data.success !== false, status: res.status, data};
+  }
+
+  function logout(silent){
+    state.token = null;
+    state.user = null;
+    persistAuth();
+    state.view = "login";
+    state.history = null;
+    if(!silent) showToast("success", "Signed out.");
+    render();
+  }
+
+  /* ============================================================
+     ACTIONS
+  ============================================================ */
+  async function handleRegister(form){
+    const name = form.name.value.trim();
+    const email = form.email.value.trim();
+    const password = form.password.value;
+
+    if(!name || !email || !password){
+      showToast("error", "Fill in every field to continue.");
+      return;
+    }
+    state.loading = true; render();
+    try{
+      await api("/auth/register", {method:"POST", auth:false, body:{name, email, password}});
+      showToast("success", "Account created. Sign in to continue.");
+      state.view = "login";
+    }catch(err){
+      showToast("error", err.message || "Registration failed.");
+    }finally{
+      state.loading = false; render();
+    }
+  }
+
+  async function handleLogin(form){
+    const email = form.email.value.trim();
+    const password = form.password.value;
+    if(!email || !password){
+      showToast("error", "Enter your email and password.");
+      return;
+    }
+    state.loading = true; render();
+    try{
+      const res = await api("/auth/login", {method:"POST", auth:false, body:{email, password}});
+      state.token = res.data.token;
+      state.user = res.data.user;
+      persistAuth();
+      state.view = "dashboard";
+      showToast("success", "Welcome back, " + (state.user.name || "").split(" ")[0] + ".");
+      loadBalance();
+      loadHistory();
+    }catch(err){
+      showToast("error", err.message || "Login failed.");
+    }finally{
+      state.loading = false; render();
+    }
+  }
+
+  async function loadBalance(){
+    state.balanceLoading = true; render();
+    try{
+      const res = await api("/transactions/balance");
+      state.user = {...state.user, balance: res.data.balance, accountNumber: res.data.accountNumber};
+      persistAuth();
+    }catch(err){
+      if(!err.authError) showToast("error", err.message || "Couldn't load balance.");
+    }finally{
+      state.balanceLoading = false; render();
+    }
+  }
+
+  async function loadHistory(){
+    try{
+      const res = await api("/transactions/history");
+      state.history = res.data.transactions || [];
+    }catch(err){
+      if(!err.authError) showToast("error", err.message || "Couldn't load transaction history.");
+    }
+    render();
+  }
+
+  async function loadProfile(){
+    try{
+      const res = await api("/auth/profile");
+      state.user = {...state.user, ...res.data.user};
+      persistAuth();
+    }catch(err){
+      if(!err.authError) showToast("error", err.message || "Couldn't load profile.");
+    }
+    render();
+  }
+
+  async function submitSend(form, confirmSelf){
+    const receiverAccount = form.receiverAccount.value.trim();
+    const amount = form.amount.value;
+
+    if(!receiverAccount || !amount){
+      showToast("error", "Enter a receiver account and an amount.");
+      return;
+    }
+    if(Number(amount) <= 0){
+      showToast("error", "Amount must be a positive number.");
+      return;
+    }
+
+    state.loading = true; render();
+    try{
+      const res = await api("/transactions/send", {
+        method:"POST",
+        body:{ receiverAccount, amount, confirmSelfTransfer: !!confirmSelf }
+      });
+
+      if(res.data.status === "FRAUD" || res.data.success === false){
+        state.modal = null;
+        showToast("error", "Transaction blocked — " + (res.data.fraudReason || "flagged as suspicious") + " (" + (res.data.riskLevel || "HIGH") + " risk).", 5200);
+        loadHistory();
+      } else {
+        state.modal = null;
+        showToast("success", res.data.message || "Transfer complete.");
+        form.reset();
+        loadBalance();
+        loadHistory();
+        state.view = "history";
+      }
+    }catch(err){
+      if(err.data && err.data.selfTransfer){
+        state.modal = {type:"self-transfer", form};
+        render();
+        return;
+      }
+      showToast("error", err.message || "Transfer failed.");
+    }finally{
+      state.loading = false; render();
+    }
+  }
+
+  /* ============================================================
+     ICONS (inline, minimal line set)
+  ============================================================ */
+  const ICON = {
+    dashboard: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="8" height="10" rx="1.5"/><rect x="13" y="3" width="8" height="6" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="15" width="8" height="6" rx="1.5"/></svg>`,
+    send: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 12h15M13 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    history: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 1 0 3-6.7" stroke-linecap="round"/><path d="M3 4v5h5M12 7v5l4 2" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    profile: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.5"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0" stroke-linecap="round"/></svg>`,
+    logout: `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    seal: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12 10 17 19 7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    arrowUpRight: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 17 17 7M8 7h9v9" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    arrowDownLeft: `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 7 7 17M16 17H7V8" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    refresh: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12a9 9 0 0 1 15.3-6.4L21 8M21 3v5h-5M21 12a9 9 0 0 1-15.3 6.4L3 16M3 21v-5h5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+    copy: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v1" stroke-linecap="round"/></svg>`,
+    settings: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  };
+
+  /* ============================================================
+     RISK / STATUS PILL
+  ============================================================ */
+  function statusPill(tx){
+    const status = tx.status;
+    const risk = tx.riskLevel;
+    if(status === "FRAUD"){
+      return `<span class="pill pill-fraud"><span class="pill-dot"></span>FLAGGED · ${escapeHtml(risk||"HIGH")}</span>`;
+    }
+    if(risk === "HIGH" || risk === "MEDIUM"){
+      return `<span class="pill pill-caution"><span class="pill-dot"></span>${escapeHtml(status)} · ${escapeHtml(risk)}</span>`;
+    }
+    return `<span class="pill pill-safe"><span class="pill-dot"></span>${escapeHtml(status||"SUCCESS")}</span>`;
+  }
+
+  /* ============================================================
+     LAYOUT SHELL
+  ============================================================ */
+  function shell(innerHtml, activeView){
+    const initials = (state.user && state.user.name || "?").split(" ").map(s=>s[0]).slice(0,2).join("").toUpperCase();
+    return `
+    <div class="app-shell" style="display:flex; min-height:100vh; position:relative; z-index:1;">
+      <aside class="sidebar" style="width:232px; flex-shrink:0; border-right:1px solid var(--ink-800); display:flex; flex-direction:column; padding:22px 14px;">
+        <div class="brand-block" style="display:flex; align-items:center; gap:11px; padding:6px 8px 26px 8px;">
+          <div class="seal-mark" style="color:var(--brass);">${ICON.seal}</div>
+          <div>
+            <div class="serif" style="font-size:17px; color:var(--paper); line-height:1.1;">Ledgerline</div>
+            <div style="font-size:10.5px; color:var(--paper-dim); letter-spacing:0.06em; text-transform:uppercase; margin-top:2px;">Fraud-aware transfers</div>
+          </div>
+        </div>
+        <nav style="display:flex; flex-direction:column; gap:3px;">
+          ${navLink("dashboard", ICON.dashboard, "Dashboard", activeView)}
+          ${navLink("send", ICON.send, "Send money", activeView)}
+          ${navLink("history", ICON.history, "History", activeView)}
+          ${navLink("profile", ICON.profile, "Profile", activeView)}
+        </nav>
+        <div class="sidebar-footer" style="margin-top:auto; padding-top:14px;">
+          <hr class="divider" style="margin-bottom:14px;">
+          <div style="display:flex; align-items:center; gap:10px; padding:6px 8px; margin-bottom:8px;">
+            <div style="width:32px; height:32px; border-radius:50%; background:var(--ink-800); border:1px solid var(--ink-700); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; color:var(--brass-bright); flex-shrink:0;">${escapeHtml(initials)}</div>
+            <div style="overflow:hidden;">
+              <div style="font-size:13px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(state.user?.name||"")}</div>
+              <div style="font-size:11px; color:var(--paper-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(state.user?.email||"")}</div>
+            </div>
+          </div>
+          <button data-action="logout" class="nav-link focus-ring" style="width:100%; color:var(--paper-dim);">${ICON.logout}<span>Sign out</span></button>
+          <button data-action="open-settings" class="nav-link focus-ring" style="width:100%; color:var(--paper-dim); font-size:11px;">${ICON.settings}<span>API: ${escapeHtml(state.apiBase.replace(/^https?:\/\//,''))}</span></button>
+        </div>
+      </aside>
+      <main class="main-content" style="flex:1; padding:34px 40px; min-width:0;">
+        <div style="max-width:920px; margin:0 auto;">
+          ${innerHtml}
+        </div>
+      </main>
+    </div>`;
+  }
+
+  function navLink(view, icon, label, activeView){
+    return `<a href="#" data-action="nav" data-view="${view}" class="nav-link focus-ring ${activeView===view?'active':''}">${icon}<span>${label}</span></a>`;
+  }
+
+  /* ============================================================
+     VIEWS
+  ============================================================ */
+  function viewAuth(){
+    const isLogin = state.view === "login";
+    return `
+    <div style="min-height:100vh; display:flex; position:relative; z-index:1;">
+      <div style="flex:1; display:none;" class="auth-brand-col">
+      </div>
+      <div style="flex:1.1; display:flex; flex-direction:column; justify-content:center; padding:40px 48px; position:relative; background:linear-gradient(160deg, var(--ink-900), var(--ink-950));">
+        <div style="position:absolute; top:36px; left:48px; display:flex; align-items:center; gap:11px;">
+          <div class="seal-mark" style="color:var(--brass);">${ICON.seal}</div>
+          <div class="serif" style="font-size:16px;">Ledgerline</div>
+        </div>
+        <div style="max-width:640px;">
+          <div style="font-size:11px; letter-spacing:0.1em; text-transform:uppercase; color:var(--brass); margin-bottom:18px;">Real-time fraud screening</div>
+          <h1 class="serif" style="font-size:46px; line-height:1.08; color:var(--paper); margin:0 0 18px 0;">Every transfer,<br>checked twice —<br>once by you, once by us.</h1>
+          <p style="color:var(--paper-dim); font-size:15.5px; line-height:1.65; max-width:420px;">Ledgerline screens every transaction for unusual amounts and rapid-fire activity the moment you hit send, and keeps a full ledger you can review anytime.</p>
+        </div>
+      </div>
+      <div style="flex:1; display:flex; align-items:center; justify-content:center; padding:40px;">
+        <div style="width:100%; max-width:380px;" class="fade-in">
+          <h2 class="serif" style="font-size:26px; margin:0 0 6px 0;">${isLogin ? "Sign in" : "Create your account"}</h2>
+          <p style="color:var(--paper-dim); font-size:14px; margin:0 0 28px 0;">${isLogin ? "Enter your credentials to access your ledger." : "Takes less than a minute."}</p>
+
+          ${isLogin ? formLogin() : formRegister()}
+
+          <div style="margin-top:22px; text-align:center; font-size:13.5px; color:var(--paper-dim);">
+            ${isLogin
+              ? `New to Ledgerline? <a href="#" data-action="nav" data-view="register" style="color:var(--brass-bright); font-weight:600;">Create an account</a>`
+              : `Already have an account? <a href="#" data-action="nav" data-view="login" style="color:var(--brass-bright); font-weight:600;">Sign in</a>`}
+          </div>
+
+          <div style="margin-top:30px; padding-top:18px; border-top:1px solid var(--ink-800);">
+            <button data-action="open-settings" class="btn btn-ghost focus-ring" style="width:100%; font-size:12.5px; color:var(--paper-dim);">
+              ${ICON.settings} Server: <span class="mono">${escapeHtml(state.apiBase)}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  function formLogin(){
+    return `
+    <form data-form="login" autocomplete="on">
+      <div style="margin-bottom:16px;">
+        <label class="field-label">Email</label>
+        <input class="field-input focus-ring" type="email" name="email" placeholder="you@example.com" required autocomplete="username">
+      </div>
+      <div style="margin-bottom:22px;">
+        <label class="field-label">Password</label>
+        <input class="field-input focus-ring" type="password" name="password" placeholder="••••••••" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn btn-primary focus-ring" style="width:100%;" ${state.loading?"disabled":""}>
+        ${state.loading ? "Signing in…" : "Sign in"}
+      </button>
+    </form>`;
+  }
+
+  function formRegister(){
+    return `
+    <form data-form="register" autocomplete="on">
+      <div style="margin-bottom:16px;">
+        <label class="field-label">Full name</label>
+        <input class="field-input focus-ring" type="text" name="name" placeholder="Aman Sharma" required autocomplete="name">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label class="field-label">Email</label>
+        <input class="field-input focus-ring" type="email" name="email" placeholder="you@example.com" required autocomplete="username">
+      </div>
+      <div style="margin-bottom:8px;">
+        <label class="field-label">Password</label>
+        <input class="field-input focus-ring" type="password" name="password" placeholder="At least 6 characters" required autocomplete="new-password" minlength="6">
+      </div>
+      <div style="margin-bottom:22px; font-size:12px; color:var(--paper-dim);">An account number is generated for you automatically.</div>
+      <button type="submit" class="btn btn-primary focus-ring" style="width:100%;" ${state.loading?"disabled":""}>
+        ${state.loading ? "Creating account…" : "Create account"}
+      </button>
+    </form>`;
+  }
+
+  function viewDashboard(){
+    const u = state.user || {};
+    const recent = (state.history || []).slice(0,5);
+    return shell(`
+      <div class="fade-in">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:26px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h1 class="serif" style="font-size:26px; margin:0;">Welcome back, ${escapeHtml((u.name||"").split(" ")[0])}</h1>
+            <p style="color:var(--paper-dim); font-size:13.5px; margin:4px 0 0 0;">Here's where your account stands today.</p>
+          </div>
+          <button data-action="refresh-dashboard" class="btn btn-ghost focus-ring" style="font-size:12.5px; padding:9px 14px;">${ICON.refresh} Refresh</button>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1.3fr 1fr; gap:16px; margin-bottom:16px;" class="dash-grid">
+          <div class="card" style="padding:26px; background:linear-gradient(155deg, var(--ink-900), var(--ink-850));">
+            <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--paper-dim); margin-bottom:10px;">Available balance</div>
+            ${state.balanceLoading
+              ? `<div class="skeleton" style="height:44px; width:220px; margin-bottom:8px;"></div>`
+              : `<div class="balance-figure serif" style="font-size:40px; color:var(--brass-bright);">${fmtMoney(u.balance)}</div>`
+            }
+            <div style="display:flex; align-items:center; gap:8px; margin-top:14px;">
+              <span style="font-size:12px; color:var(--paper-dim);">Account</span>
+              <span class="mono" style="font-size:13px; background:var(--ink-950); padding:3px 9px; border-radius:3px; border:1px solid var(--ink-800);">${escapeHtml(u.accountNumber||"—")}</span>
+              <button data-action="copy-account" class="focus-ring" style="background:none; border:none; color:var(--paper-dim); padding:4px; display:flex;" title="Copy account number">${ICON.copy}</button>
+            </div>
+          </div>
+          <div class="card" style="padding:26px; display:flex; flex-direction:column; justify-content:center; gap:12px;">
+            <a href="#" data-action="nav" data-view="send" class="btn btn-primary focus-ring" style="justify-content:flex-start;">${ICON.send} Send money</a>
+            <a href="#" data-action="nav" data-view="history" class="btn btn-ghost focus-ring" style="justify-content:flex-start;">${ICON.history} View full history</a>
+          </div>
+        </div>
+
+        <div class="card" style="padding:0; overflow:hidden;">
+          <div style="padding:18px 22px; border-bottom:1px solid var(--ink-800); display:flex; justify-content:space-between; align-items:center;">
+            <h3 class="serif" style="font-size:16px; margin:0;">Recent activity</h3>
+            <a href="#" data-action="nav" data-view="history" style="font-size:12.5px; color:var(--brass-bright); font-weight:600;">See all ${ICON.arrowUpRight}</a>
+          </div>
+          ${recent.length === 0
+            ? emptyState("No transactions yet", "Send your first transfer and it'll show up here.")
+            : `<table>${recent.map(tx=>txRow(tx, u)).join("")}</table>`
+          }
+        </div>
+      </div>
+    `, "dashboard");
+  }
+
+  function viewSend(){
+    return shell(`
+      <div class="fade-in" style="max-width:480px;">
+        <h1 class="serif" style="font-size:26px; margin:0 0 6px 0;">Send money</h1>
+        <p style="color:var(--paper-dim); font-size:13.5px; margin:0 0 26px 0;">Every transfer is screened instantly for unusual amount or rapid activity.</p>
+
+        <div class="card" style="padding:26px;">
+          <form data-form="send">
+            <div style="margin-bottom:18px;">
+              <label class="field-label">Receiver's account number</label>
+              <input class="field-input focus-ring mono" type="text" name="receiverAccount" placeholder="ACC1234567890" required>
+            </div>
+            <div style="margin-bottom:8px;">
+              <label class="field-label">Amount</label>
+              <div style="position:relative;">
+                <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--paper-dim); font-family:var(--font-mono);">₹</span>
+                <input class="field-input focus-ring mono" style="padding-left:28px;" type="number" name="amount" min="0.01" step="0.01" placeholder="0.00" required>
+              </div>
+            </div>
+            <div style="font-size:12px; color:var(--paper-dim); margin-bottom:22px;">Transfers over ₹50,000, or 5+ transfers within a minute, are flagged for review.</div>
+            <button type="submit" class="btn btn-primary focus-ring" style="width:100%;" ${state.loading?"disabled":""}>
+              ${state.loading ? "Processing…" : "Review & send"}
+            </button>
+          </form>
+        </div>
+
+        <div style="margin-top:16px; padding:14px 16px; border-radius:4px; background:var(--ink-900); border:1px solid var(--ink-800); font-size:12.5px; color:var(--paper-dim); display:flex; gap:10px;">
+          <span style="color:var(--brass); flex-shrink:0;">${ICON.seal}</span>
+          <span>Your current balance is <strong style="color:var(--paper);">${fmtMoney((state.user||{}).balance)}</strong>. Flagged transactions are logged but not completed.</span>
+        </div>
+      </div>
+    `, "send");
+  }
+
+  function viewHistory(){
+    const list = state.history;
+    const u = state.user || {};
+    return shell(`
+      <div class="fade-in">
+        <div style="display:flex; align-items:baseline; justify-content:space-between; margin-bottom:22px; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h1 class="serif" style="font-size:26px; margin:0;">Transaction history</h1>
+            <p style="color:var(--paper-dim); font-size:13.5px; margin:4px 0 0 0;">${list ? list.length : 0} transaction${list && list.length===1?"":"s"} on record.</p>
+          </div>
+          <button data-action="refresh-history" class="btn btn-ghost focus-ring" style="font-size:12.5px; padding:9px 14px;">${ICON.refresh} Refresh</button>
+        </div>
+        <div class="card" style="padding:0; overflow:hidden;">
+          ${list === null
+            ? `<div style="padding:22px;">${[1,2,3].map(()=>`<div class="skeleton" style="height:44px; margin-bottom:10px;"></div>`).join("")}</div>`
+            : list.length === 0
+              ? emptyState("No transactions yet", "Your sent and received transfers will appear here.")
+              : `<div style="overflow-x:auto;"><table>
+                  <thead><tr><th>Direction</th><th>Counterparty</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead>
+                  <tbody>${list.map(tx=>txRow(tx, u, true)).join("")}</tbody>
+                </table></div>`
+          }
+        </div>
+      </div>
+    `, "history");
+  }
+
+  function txRow(tx, u, detailed){
+    const isSender = tx.sender_account === u.accountNumber;
+    const counterpart = isSender ? tx.receiver_name : tx.sender_name;
+    const counterAcct = isSender ? tx.receiver_account : tx.sender_account;
+    const dirIcon = isSender ? ICON.arrowUpRight : ICON.arrowDownLeft;
+    const dirColor = isSender ? "var(--fraud)" : "var(--safe)";
+    const dirLabel = isSender ? "Sent" : "Received";
+    const sign = isSender ? "−" : "+";
+
+    if(detailed){
+      return `<tr class="tx-row">
+        <td><span style="display:inline-flex; align-items:center; gap:7px; color:${dirColor};">${dirIcon}${dirLabel}</span></td>
+        <td>
+          <div style="font-weight:500;">${escapeHtml(counterpart||"—")}</div>
+          <div class="mono" style="font-size:11.5px; color:var(--paper-dim);">${escapeHtml(counterAcct||"")}</div>
+        </td>
+        <td class="mono" style="color:${dirColor}; font-weight:600;">${sign}${fmtMoney(tx.amount)}</td>
+        <td>${statusPill(tx)}</td>
+        <td style="color:var(--paper-dim); font-size:13px;">${fmtDate(tx.created_at)}</td>
+      </tr>`;
+    }
+    return `<tr class="tx-row">
+      <td style="width:36px;"><span style="color:${dirColor}; display:flex;">${dirIcon}</span></td>
+      <td>
+        <div style="font-weight:500;">${dirLabel} ${isSender?"to":"from"} ${escapeHtml(counterpart||"—")}</div>
+        <div style="font-size:12px; color:var(--paper-dim); margin-top:2px;">${fmtDate(tx.created_at)}</div>
+      </td>
+      <td style="text-align:right; white-space:nowrap;">
+        <div class="mono" style="color:${dirColor}; font-weight:600;">${sign}${fmtMoney(tx.amount)}</div>
+        <div style="margin-top:4px;">${statusPill(tx)}</div>
+      </td>
+    </tr>`;
+  }
+
+  function viewProfile(){
+    const u = state.user || {};
+    return shell(`
+      <div class="fade-in" style="max-width:520px;">
+        <h1 class="serif" style="font-size:26px; margin:0 0 24px 0;">Profile</h1>
+        <div class="card" style="padding:0; overflow:hidden;">
+          ${profileRow("Full name", u.name)}
+          ${profileRow("Email", u.email)}
+          ${profileRow("Account number", u.accountNumber, true)}
+          ${profileRow("Balance", fmtMoney(u.balance), true)}
+          ${profileRow("Member since", u.createdAt ? fmtDate(u.createdAt) : "—")}
+        </div>
+
+        <div style="margin-top:28px;">
+          <h3 class="serif" style="font-size:15px; margin:0 0 12px 0; color:var(--paper-dim);">Connection</h3>
+          <div class="card" style="padding:18px 20px;">
+            <label class="field-label">API base URL</label>
+            <div style="display:flex; gap:8px;">
+              <input class="field-input focus-ring mono" style="font-size:13px;" type="text" id="api-base-input" value="${escapeHtml(state.apiBase)}">
+              <button data-action="save-api-base" class="btn btn-ghost focus-ring" style="padding:0 16px;">Save</button>
+            </div>
+          </div>
+        </div>
+
+        <button data-action="logout" class="btn btn-danger-ghost focus-ring" style="margin-top:26px; width:100%;">${ICON.logout} Sign out</button>
+      </div>
+    `, "profile");
+  }
+
+  function profileRow(label, value, mono){
+    return `<div style="display:flex; justify-content:space-between; align-items:center; padding:16px 22px; border-bottom:1px solid var(--ink-850);">
+      <span style="font-size:13px; color:var(--paper-dim);">${label}</span>
+      <span class="${mono?'mono':''}" style="font-size:14.5px; font-weight:500;">${escapeHtml(value ?? "—")}</span>
+    </div>`;
+  }
+
+  function emptyState(title, sub){
+    return `<div style="padding:54px 20px; text-align:center;">
+      <div style="width:44px; height:44px; border-radius:50%; background:var(--ink-850); border:1px solid var(--ink-800); display:flex; align-items:center; justify-content:center; margin:0 auto 14px auto; color:var(--paper-dim);">${ICON.history}</div>
+      <div style="font-weight:600; font-size:14.5px; margin-bottom:5px;">${title}</div>
+      <div style="font-size:13px; color:var(--paper-dim);">${sub}</div>
+    </div>`;
+  }
+
+  /* ============================================================
+     MODAL: self-transfer confirmation
+  ============================================================ */
+  function modalHtml(){
+    if(!state.modal) return "";
+    if(state.modal.type === "self-transfer"){
+      return `
+      <div class="modal-backdrop" data-action="modal-backdrop">
+        <div class="card fade-in" style="max-width:400px; width:100%; padding:26px;" onclick="event.stopPropagation()">
+          <div style="width:38px; height:38px; border-radius:50%; background:var(--caution-bg); color:var(--caution); display:flex; align-items:center; justify-content:center; margin-bottom:16px;">${ICON.settings}</div>
+          <h3 class="serif" style="font-size:18px; margin:0 0 8px 0;">This is your own account</h3>
+          <p style="font-size:13.5px; color:var(--paper-dim); line-height:1.55; margin:0 0 22px 0;">The receiver account matches your own. Your balance won't change — do you want to log this as a self-transfer anyway?</p>
+          <div style="display:flex; gap:10px;">
+            <button data-action="cancel-modal" class="btn btn-ghost focus-ring" style="flex:1;">Cancel</button>
+            <button data-action="confirm-self-transfer" class="btn btn-primary focus-ring" style="flex:1;">Confirm</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    if(state.modal.type === "settings"){
+      return `
+      <div class="modal-backdrop" data-action="modal-backdrop">
+        <div class="card fade-in" style="max-width:420px; width:100%; padding:26px;" onclick="event.stopPropagation()">
+          <h3 class="serif" style="font-size:18px; margin:0 0 6px 0;">Backend connection</h3>
+          <p style="font-size:13px; color:var(--paper-dim); margin:0 0 18px 0;">Point this at wherever your Express server is running.</p>
+          <label class="field-label">API base URL</label>
+          <input class="field-input focus-ring mono" id="modal-api-base" style="font-size:13px; margin-bottom:18px;" type="text" value="${escapeHtml(state.apiBase)}" placeholder="http://localhost:5000/api">
+          <div style="display:flex; gap:10px;">
+            <button data-action="cancel-modal" class="btn btn-ghost focus-ring" style="flex:1;">Cancel</button>
+            <button data-action="save-api-base-modal" class="btn btn-primary focus-ring" style="flex:1;">Save</button>
+          </div>
+        </div>
+      </div>`;
+    }
+    return "";
+  }
+
+  /* ============================================================
+     TOAST
+  ============================================================ */
+  function toastHtml(){
+    if(!state.toast) return "";
+    return `<div class="toast ${state.toast.type} fade-in">${escapeHtml(state.toast.msg)}</div>`;
+  }
+
+  /* ============================================================
+     RENDER
+  ============================================================ */
+  function render(){
+    const root = document.getElementById("root");
+    let html;
+    if(!state.token){
+      html = viewAuth();
+    } else {
+      switch(state.view){
+        case "send": html = viewSend(); break;
+        case "history": html = viewHistory(); break;
+        case "profile": html = viewProfile(); break;
+        default: html = viewDashboard();
+      }
+    }
+    root.innerHTML = html + modalHtml() + toastHtml();
+  }
+
+  /* ============================================================
+     EVENT DELEGATION
+  ============================================================ */
+  document.addEventListener("submit", (e)=>{
+    const form = e.target;
+    if(form.matches('[data-form="login"]')){ e.preventDefault(); handleLogin(form); }
+    if(form.matches('[data-form="register"]')){ e.preventDefault(); handleRegister(form); }
+    if(form.matches('[data-form="send"]')){ e.preventDefault(); submitSend(form, false); }
+  });
+
+  document.addEventListener("click", (e)=>{
+    const el = e.target.closest("[data-action]");
+    if(!el) return;
+    const action = el.dataset.action;
+
+    if(action === "nav"){
+      e.preventDefault();
+      state.view = el.dataset.view;
+      if(!state.token && (state.view==="login"||state.view==="register")){ render(); return; }
+      if(state.view === "dashboard"){ loadBalance(); if(state.history===null) loadHistory(); }
+      if(state.view === "history"){ loadHistory(); }
+      if(state.view === "profile"){ loadProfile(); }
+      render();
+    }
+    if(action === "logout"){ logout(); }
+    if(action === "refresh-dashboard"){ loadBalance(); loadHistory(); }
+    if(action === "refresh-history"){ loadHistory(); }
+    if(action === "copy-account"){
+      const acct = (state.user||{}).accountNumber;
+      if(acct){
+        navigator.clipboard?.writeText(acct).then(()=>showToast("success","Account number copied."));
+      }
+    }
+    if(action === "open-settings"){ state.modal = {type:"settings"}; render(); }
+    if(action === "cancel-modal"){ state.modal = null; render(); }
+    if(action === "modal-backdrop" && e.target === el){ state.modal = null; render(); }
+    if(action === "confirm-self-transfer"){
+      const form = state.modal.form;
+      submitSend(form, true);
+    }
+    if(action === "save-api-base-modal"){
+      const val = document.getElementById("modal-api-base").value.trim();
+      if(val){
+        state.apiBase = val.replace(/\/$/,"");
+        localStorage.setItem("ll_api_base", state.apiBase);
+        showToast("success", "Server address updated.");
+      }
+      state.modal = null;
+      render();
+    }
+    if(action === "save-api-base"){
+      const val = document.getElementById("api-base-input").value.trim();
+      if(val){
+        state.apiBase = val.replace(/\/$/,"");
+        localStorage.setItem("ll_api_base", state.apiBase);
+        showToast("success", "Server address updated.");
+      }
+    }
+  });
+
+  /* ============================================================
+     BOOT
+  ============================================================ */
+  if(state.token && state.user){
+    state.view = "dashboard";
+    render();
+    loadBalance();
+    loadHistory();
+  } else {
+    render();
+  }
+
+})();
+</script>
+</body>
+</html>
