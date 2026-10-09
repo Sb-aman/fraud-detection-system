@@ -1,9 +1,5 @@
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
 
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -14,39 +10,24 @@ import Transactions from "./pages/Transactions";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
-
   return (
-
     <BrowserRouter>
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          style: { fontFamily: "inherit", borderRadius: "10px" },
+        }}
+      />
 
       <Routes>
-
         {/* DEFAULT */}
-
-        <Route
-          path="/"
-          element={
-            <Navigate
-              to="/login"
-              replace
-            />
-          }
-        />
+        <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* PUBLIC */}
-
-        <Route
-          path="/login"
-          element={<Login />}
-        />
-
-        <Route
-          path="/register"
-          element={<Register />}
-        />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
 
         {/* PROTECTED */}
-
         <Route
           path="/dashboard"
           element={
@@ -55,7 +36,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/send-money"
           element={
@@ -64,7 +44,6 @@ function App() {
             </ProtectedRoute>
           }
         />
-
         <Route
           path="/transactions"
           element={
@@ -75,19 +54,8 @@ function App() {
         />
 
         {/* UNKNOWN */}
-
-        <Route
-          path="*"
-          element={
-            <Navigate
-              to="/dashboard"
-              replace
-            />
-          }
-        />
-
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
-
     </BrowserRouter>
   );
 }
